@@ -1,0 +1,1126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.11.xsd">
+
+    <property name="version" value="0.4.23"/>
+
+    <changeSet id="00101" dbms="mysql" author="idv@peratera.com">
+        <createTable tableName="oauth_client_details">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_oauth_client_details"/>
+            </column>
+            <column name="client_id" type="varchar(256)"/>
+            <column name="resource_ids" type="varchar(256)"/>
+            <column name="client_secret" type="varchar(256)"/>
+            <column name="authorized_grant_types" type="varchar(256)"/>
+            <column name="web_server_redirect_uri" type="varchar(256)"/>
+            <column name="authorities" type="varchar(256)"/>
+            <column name="access_token_validity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="refresh_token_validity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="additional_information" type="varchar(4000)"/>
+            <column name="autoapprove" type="varchar(32)"/>
+        </createTable>
+
+        <createTable tableName="oauth_scope">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_oauth_scope"/>
+            </column>
+            <column name="scope_name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="oauth_client_scope">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_oauth_client_scope"/>
+            </column>
+            <column name="oauth_client_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_oauth_client_scope__oauth_client_details" references="oauth_client_details(id)"/>
+            </column>
+            <column name="oauth_scope_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_oauth_client_scope__oauth_scope" references="oauth_scope(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="oauth_authority">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_oauth_authority"/>
+            </column>
+            <column name="authority_name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="oauth_authority_scope">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_oauth_authority_scope"/>
+            </column>
+            <column name="oauth_authority_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_oauth_authority_scope__oauth_authority" references="oauth_authority(id)"/>
+            </column>
+            <column name="oauth_scope_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_oauth_authority_scope__oauth_scope" references="oauth_scope(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="oauth_code">
+            <column name="code" type="varchar(256)"/>
+            <column name="authentication" type="blob"/>
+        </createTable>
+
+        <createTable tableName="oauth_refresh_token">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_refresh_token"/>
+            </column>
+            <column name="oauth_client_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_oauth_refresh_token__oauth_client_details" references="oauth_client_details(id)"/>
+            </column>
+            <column name="created_on" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expire_on" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sub" type="nvarchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_hash" type="char(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_oauth_refresh_token__token_hash"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="user_profile">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user_profile"/>
+            </column>
+            <column name="first_name" type="varchar(128)"/>
+            <column name="last_name" type="varchar(128)"/>
+            <column name="current_customer_uuid" type="varchar(36)"/>
+            <column name="avatar_object_key" type="varchar(256)"/>
+            <column name="small_avatar" type="longtext"/>
+        </createTable>
+
+        <createTable tableName="user">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user"/>
+            </column>
+            <column name="username" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_password" type="varchar(128)"/>
+            <column name="expired" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="activated" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="alive" type="boolean" defaultValue="false"/>
+        </createTable>
+        <addUniqueConstraint tableName="user" columnNames="username, alive" constraintName="uniq_user__username__alive"/>
+
+        <createTable tableName="user_authority">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user_authority"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_user_authority__user" references="user(id)"/>
+            </column>
+            <column name="authority_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_user_authority__oauth_authority" references="oauth_authority(id)"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="user_authority" columnNames="user_id, authority_id" constraintName="uniq_user_authority__user_id__authority_id"/>
+
+        <createTable tableName="notification_config">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_config"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_notification_config__user" references="user(id)"/>
+            </column>
+            <column name="transport" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="title" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="notification_config" columnNames="user_id, transport" constraintName="uniq_notification_config__user_id__transport"/>
+
+        <createTable tableName="notification_email">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_email" foreignKeyName="fk_notification_email__notification_config" references="notification_config(id)"/>
+            </column>
+            <column name="email" type="varchar(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_notification_email__email"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="notification_sms">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_sms" foreignKeyName="fk_notification_sms__notification_config" references="notification_config(id)"/>
+            </column>
+            <column name="phone" type="varchar(15)">
+                <constraints nullable="false" unique="false" uniqueConstraintName="uniq_notification_sms__phone"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="notification_message_template">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_message_template"/>
+            </column>
+            <column name="transport" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subject" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="action" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="template" type="clob">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="status">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_status"/>
+            </column>
+            <column name="name" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(256)"/>
+            <column name="status_group" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status_order" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="customer">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_customer"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="customer_type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_id" type="varchar(36)"/>
+        </createTable>
+
+        <createTable tableName="customer_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_customer_event"/>
+            </column>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_event__customer" references="customer(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="merchant_history">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_merchant_history"/>
+            </column>
+            <column name="customer_event_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_merchant_history__customer_event" references="customer_event(id)"/>
+            </column>
+            <column name="cdd" type="JSON"/>
+        </createTable>
+
+        <createTable tableName="private_individual">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_private_individual" foreignKeyName="fk_private_individual__customer" references="customer(id)"/>
+            </column>
+            <column name="first_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_private_individual__email"/>
+            </column>
+            <column name="info" type="JSON"/>
+        </createTable>
+
+        <createTable tableName="beneficiary">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_beneficiary" foreignKeyName="fk_beneficiary__customer" references="customer(id)"/>
+            </column>
+            <column name="title" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="merchant">
+            <column name="id" type="int">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_merchant" foreignKeyName="fk_merchant__customer" references="customer(id)"/>
+            </column>
+            <column name="company_name" type="varchar(256)"/>
+            <column name="cdd" type="JSON"/>
+        </createTable>
+
+        <createTable tableName="cdd_document_type">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_cdd_document_type"/>
+            </column>
+            <column name="code" type="varchar(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_cdd_document_type__code"/>
+            </column>
+            <column name="name" type="varchar(256)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_cdd_document_type__name"/>
+            </column>
+            <column name="required" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="cdd_document">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_cdd_document"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_cdd_document__customer" references="customer(id)"/>
+            </column>
+            <column name="document_type_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_cdd_document__cdd_document_type" references="cdd_document_type(id)"/>
+            </column>
+            <column name="file_name" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="object_key" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(256)"/>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_cdd_document__status" references="status(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="user_customer">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user_customer"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_user_customer__user" references="user(id)"/>
+            </column>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_user_customer__customer" references="customer(id)"/>
+            </column>
+            <column name="status" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="user_customer" columnNames="user_id, customer_id" constraintName="uniq_user_customer__user_id__customer_id"/>
+
+        <createTable tableName="customer_authority">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_customer_authority"/>
+            </column>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_authority__customer" references="customer(id)"/>
+            </column>
+            <column name="authority_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_authority__oauth_authority" references="oauth_authority(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="currency">
+            <column name="id" type="int" autoIncrement="false">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_currency"/>
+            </column>
+            <column name="code" type="varchar(3)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_currency__code"/>
+            </column>
+            <column name="title" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="coins" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="iso" type="boolean" >
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="financial_provider">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_financial_provider"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="name" type="varchar(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_financial_provider__name"/>
+            </column>
+            <column name="adapter_class" type="varchar(1024)"/>
+            <column name="settings" type="varchar(1024)"/>
+        </createTable>
+
+        <createTable tableName="financial_provider_currency">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_financial_provider_currency"/>
+            </column>
+            <column name="financial_provider_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_financial_provider_currency__financial_provider" references="financial_provider(id)"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_financial_provider_currency__currency" references="currency(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="payment_method">
+            <column name="id" type="int" autoIncrement="false">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_payment_method"/>
+            </column>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_payment_method__name"/>
+            </column>
+            <column name="incoming" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="refund" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="partial_refund" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="merchant_request">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_merchant_request"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="transaction_uuid" type="varchar(36)"/>
+            <column name="merchant_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_merchant_request__customer" references="customer(id)"/>
+            </column>
+            <column name="transaction_type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_merchant_request__currency" references="currency(id)"/>
+            </column>
+            <column name="merchant_transaction_id" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="nvarchar(256)"/>
+            <column name="return_url" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="result_url" type="varchar(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="counterparty_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="counterparty_id" type="varchar(32)"/>
+            <column name="email" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="preferred_method_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_merchant_requst__payment_method" references="payment_method(id)"/>
+            </column>
+            <column name="country" type="varchar(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="town" type="varchar(128)"/>
+            <column name="street" type="varchar(128)"/>
+            <column name="premise" type="varchar(64)"/>
+            <column name="postcode" type="varchar(14)"/>
+            <column name="phone_number" type="varchar(19)"/>
+            <column name="is_handled" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="keyword" type="varchar(64)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="account_type">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_account_type"/>
+            </column>
+            <column name="code" type="varchar(4)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_account_type__code"/>
+            </column>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(128)"/>
+            <column name="enabled" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="account">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_account"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="title" type="varchar(128)"/>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_account__customer" references="customer(id)"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_account__currency" references="currency(id)"/>
+            </column>
+            <column name="type_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_account__account_type" references="account_type(id)"/>
+            </column>
+            <column name="related_customer_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_account_related_customer__customer" references="customer(id)"/>
+            </column>
+            <column name="balance" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="booked_amount" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tariff_plan_id" type="int"/>
+        </createTable>
+
+        <createTable tableName="account_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_account_event"/>
+            </column>
+            <column name="account_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_account_event__account" references="account(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_account_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_account_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="transaction">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_transaction"/>
+            </column>
+            <column name="uuid" type="varchar(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_transaction__uuid"/>
+            </column>
+            <column name="fsp_transaction_id" type="varchar(64)"/>
+            <column name="fsp_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_transaction__financial_provider" references="financial_provider(id)"/>
+            </column>
+            <column name="method_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_transaction__method" references="payment_method(id)"/>
+            </column>
+            <column name="transaction_type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_transaction__account" references="account(id)"/>
+            </column>
+            <column name="is_credit" type="boolean"/>
+            <column name="ledger_ref" type="varchar(36)"/>
+            <column name="amount" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_transaction_currency__currency" references="currency(id)"/>
+            </column>
+            <column name="settlement_amount" type="int"/>
+            <column name="settlement_currency_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_transaction_settlement_currency__currency" references="currency(id)"/>
+            </column>
+            <column name="fee" type="int"/>
+            <column name="counterparty_name" type="varchar(128)"/>
+            <column name="counterparty_id" type="varchar(64)"/>
+            <column name="description" type="varchar(128)"/>
+            <column name="fsp_transaction_secret" type="varchar(512)"/>
+            <column name="fsp_transaction_status" type="varchar(128)"/>
+            <column name="fsp_transaction_status_code" type="varchar(32)"/>
+            <column name="fsp_transaction_message" type="varchar(256)"/>
+            <column name="funds_status" type="varchar(64)"/>
+            <column name="refund_amount" type="int"/>
+            <column name="merchant_transaction_id" type="varchar(64)"/>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_transaction__status" references="status(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="transaction_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_transaction_event"/>
+            </column>
+            <column name="transaction_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_transaction_event__transaction" references="transaction(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_transaction_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_transaction_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="tariff_plan">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_tariff_plan"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(128)"/>
+            <column name="fee_beneficiary_account_id" type="int" remarks="Account ID to receive fees according to tariff plan and fee rules">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan__account" references="account(id)"/>
+            </column>
+            <column name="valid_since" type="datetime"/>
+            <column name="valid_till" type="datetime"/>
+        </createTable>
+
+        <createTable tableName="tariff_plan_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_tariff_plan_event"/>
+            </column>
+            <column name="tariff_plan_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan_event__tariff_plan" references="tariff_plan(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_tariff_plan_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="fee_rule">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_fee_rule"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="tariff_plan_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fee_rule__tariff_plan" references="tariff_plan(id)"/>
+            </column>
+            <column name="method_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fee_rule__method" references="payment_method(id)"/>
+            </column>
+            <column name="total_fee_min" type="int"/><!--total minimum fee-->
+            <column name="total_fee_max" type="int"/><!--total maximum fee-->
+            <column name="gateway_fee_amount" type="int"/><!--gateway fee amount nominated in fee currency-->
+            <column name="gateway_fee_percentage" type="decimal(10,7)"/><!--gateway fee amount %-->
+            <column name="gateway_fee_min" type="int"/>
+            <column name="gateway_fee_max" type="int"/>
+            <column name="gateway_fee_account_id" type="int">
+                <constraints foreignKeyName="fk_fee_rule__gateway_fee_account_id__account" references="account(id)"/>
+            </column>
+            <column name="success_fee_amount" type="int"/><!--successful transaction fee amount nominated in fee currency-->
+            <column name="success_fee_percentage" type="decimal(10,7)"/><!--successful transaction fee amount %-->
+            <column name="success_fee_min" type="int"/>
+            <column name="success_fee_max" type="int"/>
+            <column name="success_fee_account_id" type="int">
+                <constraints foreignKeyName="fk_fee_rule__success_fee_account_id__account" references="account(id)"/>
+            </column>
+            <column name="conditional_fee_amount" type="int"/><!--conditional fee flat-->
+            <column name="conditional_fee_percentage" type="decimal(10,7)"/><!--conditional fee %-->
+            <column name="conditional_fee_min" type="int"/>
+            <column name="conditional_fee_max" type="int"/>
+            <column name="conditional_fee_account_id" type="int">
+                <constraints foreignKeyName="fk_fee_rule__conditional_fee_account_id__account" references="account(id)"/>
+            </column>
+            <column name="refund_fee_amount" type="int"/>
+            <column name="refund_fee_percentage" type="decimal(10,7)"/>
+            <column name="refund_fee_min" type="int"/>
+            <column name="refund_fee_max" type="int"/>
+            <column name="refund_fee_account_id" type="int">
+                <constraints foreignKeyName="fk_fee_rule__refund_fee_account_id__account" references="account(id)"/>
+            </column>
+            <column name="rolling_reserve_amount" type="int"/>
+            <column name="rolling_reserve_days" type="int"/>
+            <column name="rolling_reserve_account_id" type="int">
+                <constraints foreignKeyName="fk_fee_rule__rolling_reserve_account_id__account" references="account(id)"/>
+            </column>
+            <column name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="ledger">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_ledger"/>
+            </column>
+            <column name="is_credit" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_ledger__account" references="account(id)"/>
+            </column>
+            <column name="amount" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_ledger__currency" references="currency(id)"/>
+            </column>
+            <column name="relation_uuid" type="varchar(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entry_event_type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(256)"/>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="fsp_customer">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_fsp_customer"/>
+            </column>
+            <column name="fsp_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_customer__financial_provider" references="financial_provider(id)"/>
+            </column>
+            <column name="fsp_customer_reference" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_customer__customer" references="customer(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="fsp_account">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_fsp_account"/>
+            </column>
+            <column name="fsp_customer_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_account__fsp_customer" references="fsp_customer(id)"/>
+            </column>
+            <column name="fsp_account_reference" type="varchar(256)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fsp_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_account__financial_provider" references="financial_provider(id)"/>
+            </column>
+            <column name="currency_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_account__currency" references="currency(id)"/>
+            </column>
+            <column name="account_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fsp_account__account" references="account(id)"/>
+            </column>
+            <column name="balance" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="account" baseColumnNames="tariff_plan_id" constraintName="fk_account__tariff_plan"
+            referencedTableName="tariff_plan" referencedColumnNames="id"/>
+
+        <createTable tableName="claim">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_comment"/>
+            </column>
+            <column name="ticket_id" type="varchar(14)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uniq_comment__ticket_id"/>
+            </column>
+            <column name="place" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="country" type="varchar(2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="first_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_name" type="varchar(256)"/>
+            <column name="phone_number" type="varchar(19)"/>
+            <column name="company_website" type="varchar(128)"/>
+            <column name="payments_volume" type="varchar(128)"/>
+            <column name="message" type="varchar(2000)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="claim_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_claim_event"/>
+            </column>
+            <column name="claim_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_claim_event__claim" references="claim(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_claim_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_claim_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="notification_action">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notification_action"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="destination" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(12)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="notification_transfer">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_notificaion_transfer"/>
+            </column>
+            <column name="success" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_description" type="varchar(256)"/>
+            <column name="transport" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="destination" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inner_id" type="varchar(128)"/>
+            <column name="action_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_notification_transfer__notification_action" references="notification_action(id)"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="modulr_event_payin">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_modulr_event_payin"/>
+            </column>
+            <column name="account_id" type="varchar(14)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_time" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="info" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="modulr_payment">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_modulr_payment"/>
+            </column>
+            <column name="payment_id" type="varchar(14)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(24)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_account_id" type="varchar(14)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="peratera_transaction_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_modulr_payment__transaction" references="transaction(id)"/>
+            </column>
+            <column name="info" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="modulr_event_payout">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_modulr_event_payout"/>
+            </column>
+            <column name="modulr_payment_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_modulr_event_payout__modulr_payment" references="modulr_payment(id)"/>
+            </column>
+            <column name="date_time" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="info" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="customer_type_fsp_rule">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_customer_type_fsp_rule"/>
+            </column>
+            <column name="customer_type" type="varchar(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="account_type_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_customer_type_fsp_rule__account_type" references="account_type(id)"/>
+            </column>
+            <column name="fsp_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_customer_type_fsp_rule__financial_provider" references="financial_provider(id)"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="customer_type_fsp_rule" columnNames="customer_type, account_type_id"
+            constraintName="customer_type_fsp_rule__unique_entries"/>
+
+        <createTable tableName="modulr_api_request">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_modulr_api_request"/>
+            </column>
+            <column name="type" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nonce" type="varchar(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nonce_timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="data" type="JSON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hash" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(36)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="http_status" type="int"/>
+            <column name="response_data" type="JSON"/>
+            <column name="error_message" type="varchar(1024)"/>
+        </createTable>
+
+        <createTable tableName="socket_message">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_socket_message"/>
+            </column>
+            <column name="username" type="varchar(128)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="varchar(5000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="tariff_plan_default">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_tariff_plan_default"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(128)"/>
+            <column name="account_type_id" type="int" remarks="Link to Account Type this default tariff plan will be used for (when new account is created)">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan_default__account_type" references="account_type(id)"/>
+            </column>
+            <column name="valid_since" type="datetime"/>
+            <column name="valid_till" type="datetime"/>
+        </createTable>
+
+        <createTable tableName="tariff_plan_default_event">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_tariff_plan_default_event"/>
+            </column>
+            <column name="tariff_plan_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan_default_event__tariff_plan_default" references="tariff_plan_default(id)"/>
+            </column>
+            <column name="status_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_tariff_plan_default_event__status" references="status(id)"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="true" foreignKeyName="fk_tariff_plan_default_event__user" references="user(id)"/>
+            </column>
+            <column name="timestamp" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="fee_rule_default">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_fee_rule_default"/>
+            </column>
+            <column name="uuid" type="varchar(36)"/>
+            <column name="tariff_plan_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fee_rule_default__tariff_plan" references="tariff_plan_default(id)"/>
+            </column>
+            <column name="method_id" type="int">
+                <constraints nullable="false" foreignKeyName="fk_fee_rule_default__method" references="payment_method(id)"/>
+            </column>
+            <column name="total_fee_min" type="int"/><!--total minimum fee-->
+            <column name="total_fee_max" type="int"/><!--total maximum fee-->
+            <column name="gateway_fee_amount" type="int"/><!--gateway fee amount nominated in fee currency-->
+            <column name="gateway_fee_percentage" type="decimal(10,7)"/><!--gateway fee amount %-->
+            <column name="gateway_fee_min" type="int"/>
+            <column name="gateway_fee_max" type="int"/>
+            <column name="success_fee_amount" type="int"/><!--successful transaction fee amount nominated in fee currency-->
+            <column name="success_fee_percentage" type="decimal(10,7)"/><!--successful transaction fee amount %-->
+            <column name="success_fee_min" type="int"/>
+            <column name="success_fee_max" type="int"/>
+            <column name="conditional_fee_amount" type="int"/><!--conditional fee flat-->
+            <column name="conditional_fee_percentage" type="decimal(10,7)"/><!--conditional fee %-->
+            <column name="conditional_fee_min" type="int"/>
+            <column name="conditional_fee_max" type="int"/>
+            <column name="refund_fee_amount" type="int"/>
+            <column name="refund_fee_percentage" type="decimal(10,7)"/>
+            <column name="refund_fee_min" type="int"/>
+            <column name="refund_fee_max" type="int"/>
+            <column name="rolling_reserve_amount" type="int"/>
+            <column name="rolling_reserve_days" type="int"/>
+            <column name="is_active" type="boolean">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="00102" dbms="mysql" author="idv@peratera.com">
+        <createIndex tableName="oauth_scope" indexName="idx_oauth_scope__scope_name" unique="true">
+            <column name="scope_name"/>
+        </createIndex>
+
+        <createIndex tableName="oauth_client_scope" indexName="idx_oauth_client_scope__oauth_client_id">
+            <column name="oauth_client_id"/>
+        </createIndex>
+
+        <createIndex tableName="oauth_authority" indexName="idx_oauth_authority__authority_name">
+            <column name="authority_name"/>
+        </createIndex>
+
+        <createIndex tableName="oauth_authority_scope" indexName="idx_oauth_authority_scope__oauth_authority_id__oauth_scope_id">
+            <column name="oauth_authority_id"/>
+            <column name="oauth_scope_id"/>
+        </createIndex>
+
+        <createIndex tableName="oauth_refresh_token" indexName="idx_oauth_refresh_token__token_hash__expire_on">
+            <column name="token_hash"/>
+            <column name="expire_on"/>
+        </createIndex>
+
+        <createIndex tableName="oauth_refresh_token" indexName="idx_oauth_refresh_token__expire_on">
+            <column name="expire_on"/>
+        </createIndex>
+
+        <createIndex tableName="status" indexName="idx_status__name__status_group">
+            <column name="name"/>
+            <column name="status_group"/>
+        </createIndex>
+
+        <createIndex tableName="status" indexName="idx_status__status_group__status_order">
+            <column name="status_group"/>
+            <column name="status_order"/>
+        </createIndex>
+
+        <createIndex tableName="user_customer" indexName="idv_user_customer__user_id__customer_id">
+            <column name="user_id"/>
+            <column name="customer_id"/>
+        </createIndex>
+
+        <createIndex tableName="merchant_request" indexName="idx_merchant_request__merchant__type__transaction_id">
+            <column name="merchant_id"/>
+            <column name="transaction_type"/>
+            <column name="merchant_transaction_id"/>
+        </createIndex>
+
+        <createIndex tableName="merchant_request" indexName="idx_merchant_request__uuid">
+            <column name="uuid"/>
+        </createIndex>
+
+        <createIndex tableName="cdd_document" indexName="idx_cdd_document__object_key">
+            <column name="object_key"/>
+        </createIndex>
+
+        <createIndex tableName="fee_rule" indexName="idx_fee_rule__tariff_plan_id__method_id">
+            <column name="tariff_plan_id"/>
+            <column name="method_id"/>
+        </createIndex>
+
+        <createIndex tableName="financial_provider" indexName="idx_financial_provider__uuid">
+            <column name="uuid"/>
+        </createIndex>
+
+        <createIndex tableName="account" indexName="idx_account__uuid">
+            <column name="uuid"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="00103" dbms="mysql" author="idv@peratera.com">
+        <sql>
+            CREATE TRIGGER insert_uuid__customer BEFORE INSERT ON customer FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_transaction_uuid__merchant_request BEFORE INSERT ON merchant_request FOR EACH ROW SET NEW.transaction_uuid = UUID();
+            CREATE TRIGGER insert_uuid__financial_provider BEFORE INSERT ON financial_provider FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__merchant_request BEFORE INSERT ON merchant_request FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__account BEFORE INSERT ON account FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__tariff_plan BEFORE INSERT ON tariff_plan FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__fee_rule BEFORE INSERT ON fee_rule FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__notification_action BEFORE INSERT ON notification_action FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__tariff_plan_default BEFORE INSERT ON tariff_plan_default FOR EACH ROW SET NEW.uuid = UUID();
+            CREATE TRIGGER insert_uuid__fee_rule_default BEFORE INSERT ON fee_rule_default FOR EACH ROW SET NEW.uuid = UUID();
+        </sql>
+    </changeSet>
+
+    <changeSet id="00104" dbms="mysql" author="oleksandr.polishchuk@peratera.com">
+        <sql splitStatements="true" endDelimiter="/" dbms="mysql" stripComments="true">
+            DROP TRIGGER IF EXISTS insert_user_profile_id__user;
+        </sql>
+        <sql splitStatements="true" endDelimiter="/" dbms="mysql" stripComments="true">
+            CREATE TRIGGER insert_user_profile_id__user
+                AFTER INSERT ON user
+                FOR EACH ROW
+            BEGIN
+                INSERT INTO user_profile (`id`) VALUES (NEW.id);
+            END
+        </sql>
+    </changeSet>
+</databaseChangeLog>

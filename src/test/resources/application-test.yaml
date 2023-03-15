@@ -1,0 +1,15 @@
+server:
+  servlet.context-path: /
+  port: 8081
+
+spring:
+  profiles: local
+  datasource:
+    name: kedop
+    url: jdbc:postgresql://localhost:5432/kedop
+    username: postgres
+    password: root
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+
