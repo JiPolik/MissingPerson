@@ -1,22 +1,71 @@
 version: '2'
 
 services:
-  missing-person:
-    image: 'missing-person:latest'
-    build:
-      context: .
-    container_name: missing-person
-    depends_on:
-      - db
+  #  missing-person-api:
+  #    image: 'missing-person:latest'
+  #    container_name: missing-person
+  #    build:
+  #      context: .
+  #      dockerfile: Dockerfile
+  #    depends_on:
+  #      postgres:
+  #        condition: service_healthy
+  #    networks:
+  #      - kedop-network
+  #    environment:
+  #      - SPRING_DATASOURCE_URL=jdbc:postgresql://kedopdb:5432/kedop
+  #      - SPRING_DATASOURCE_USERNAME=postgres
+  #      - SPRING_DATASOURCE_PASSWORD=postgres
+  #      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/kedop
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
 
-  db:
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kedopdb:
     image: 'postgres:15'
-    container_name: db
+    container_name: kedopdb
+    user: postgres
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    expose:
+      - 5432
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    #      - /.init.sql:docker-entrypoint-initdb.d/init.sql
+    #      - kedopdb:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+#    networks:
+#      - kedop-network
+
+#volumes:
+#  kedopdb:
+#
+#
+#networks:
+#  kedop-network:
+#    driver: bridge

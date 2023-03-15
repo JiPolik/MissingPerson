@@ -1,17 +1,16 @@
-package com.peratera.common.provision.exceptions;
+package com.kedop.missingperson.exceptions;
 
-import com.peratera.common.provision.domain.ErrorCode;
+import com.kedop.missingperson.domain.ErrorCode;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * &copy; 2021-2022 Peratera. All rights reserved.<br/><br/>
- *
- * @author Dmitry Ionash <a href="mailto:idv@peratera.com">idv@peratera.com</a>, created 2021-Aug-06
- * @version 0.4.25
- * @since 1.0.0
+ * @author oleksandrpolishchuk on 31.01.2023
+ * @project MissingPerson
  */
 @SuppressWarnings(value = "unused")
-public class CustomerException extends PerateraException {
+@Getter
+public class CustomerException extends KedopException {
 
     private static final long serialVersionUID = 8767217354002806522L;
 
@@ -25,7 +24,7 @@ public class CustomerException extends PerateraException {
         super(String.format(errorCode.getMessage(), objects), errorCode, objects);
     }
 
-    public String getPerateraErrorCode() {
+    public String getKedopErrorCode() {
         return ExceptionCode.CUSTOMER_ERROR.name();
     }
 

@@ -1,11 +1,8 @@
-package com.peratera.common.provision.exceptions;
+package com.kedop.missingperson.exceptions;
 
 /**
- * &copy; 2021-2022 Peratera. All rights reserved.<br/><br/>
- *
- * @author Dmitry Ionash <a href="mailto:idv@peratera.com">idv@peratera.com</a>, created 2021-Jun-21
- * @version 0.4.18
- * @since 1.0.0
+ * @author oleksandrpolishchuk on 31.01.2023
+ * @project MissingPerson
  */
 @SuppressWarnings(value = "unused")
 public enum ExceptionCode {

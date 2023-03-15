@@ -1,6 +1,6 @@
-package com.kedop.missingperson.service.impl;
+package com.kedop.missingperson.services.impl;
 
-import com.kedop.missingperson.service.DataImporterService;
+import com.kedop.missingperson.services.DataImporterService;
 import com.kedop.missingperson.utils.DataImporter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +18,14 @@ public class DataImporterServiceImpl implements DataImporterService {
     private final DataImporter dataImporter;
 
     @Override
-    public void importData() {
-        log.info("Start importing data...");
-        dataImporter.importIncomingData();
-        log.info("Finished import data!");
+    public void importHumanData() {
+        log.info("Start importing human data...");
+        dataImporter.importIncomingHumanData();
+        log.info("Finished import human data!");
+    }
+
+    @Override
+    public void importHumanPhotoData() {
+
     }
 }

@@ -1,4 +1,4 @@
-package com.peratera.common.provision.domain;
+package com.kedop.missingperson.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -6,22 +6,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.peratera.common.provision.domain.ComplexError.JsonKeys;
+import com.kedop.missingperson.domain.ComplexError.JsonKeys;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 import lombok.Getter;
 
 /**
- * &copy; 2021 Peratera. All rights reserved.<br/><br/>
- *
- * Sub-object for {@link ComplexResponse} object with {@link #code error code} and
- * {@link #description error description}. If error is present in the {@link ComplexResponse} both fields -
- * {@link #code} and {@link #description} must be present.
- * Note: {@link #code error code} always should be uppercase.
- *
- * @author Dmitry Ionash <a href="mailto:idv@peratera.com">idv@peratera.com</a>, created 2021-Jun-21
- * @version 0.2.5
- * @since 1.0.0
+ * @author oleksandrpolishchuk on 31.01.2023
+ * @project MissingPerson
  */
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)

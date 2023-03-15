@@ -1,4 +1,4 @@
-package com.kedop.missingperson.service;
+package com.kedop.missingperson.services;
 
 /**
  * @author oleksandrpolishchuk on 31.01.2023
@@ -6,5 +6,6 @@ package com.kedop.missingperson.service;
  */
 public interface DataImporterService {
 
-    void importData();
+    void importHumanData();
+    void importHumanPhotoData();
 }

@@ -1,4 +1,4 @@
-package com.kedop.missingperson.controller;
+package com.kedop.missingperson.controllers;
 
 import com.kedop.missingperson.config.ApplicationConfiguration;
 import com.kedop.missingperson.domain.ComplexResponse;
@@ -22,7 +22,7 @@ public class DataImporterController {
 
     @GetMapping(ApplicationConfiguration.IMPORT_DATA_PATH)
     public ComplexResponse<Void> importData() {
-        dataImporterService.importData();
+        dataImporterService.importHumanData();
         return new ComplexResponse<>(HttpStatus.OK);
     }
 

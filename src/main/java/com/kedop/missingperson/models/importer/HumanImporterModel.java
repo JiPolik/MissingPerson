@@ -1,4 +1,4 @@
-package com.kedop.missingperson.model.importer;
+package com.kedop.missingperson.models.importer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
@@ -17,7 +17,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class HumanImporterModel {
 
-    private String id;
     @JsonProperty("ID")
     private String systemId;
     @JsonProperty("OVD")

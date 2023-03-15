@@ -1,6 +1,6 @@
 package com.kedop.missingperson.repositories;
 
-import com.kedop.missingperson.entities.Human;
+import com.kedop.missingperson.entities.User;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -10,7 +10,8 @@ import org.springframework.stereotype.Repository;
  * @project MissingPerson
  */
 @Repository
-public interface HumanRepository extends JpaRepository<Human, Long> {
+public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<Human> findHumanById(Long id);
+    Optional<User> findUserByUsername(String username);
+    Optional<User> findByEmail(String email);
 }

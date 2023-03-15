@@ -1,22 +1,15 @@
-package com.peratera.api.admin.handlers;
+package com.kedop.missingperson.handler;
 
-import static com.peratera.common.provision.ProvisionConfig.EXCEPTION_LABEL;
+
+import static com.kedop.missingperson.utils.KedopConstants.EXCEPTION_LABEL;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-import com.peratera.common.provision.domain.ComplexError;
-import com.peratera.common.provision.domain.ComplexResponse;
-import com.peratera.common.provision.domain.ErrorCode;
-import com.peratera.common.provision.domain.GlobalValidationError;
-import com.peratera.common.provision.exceptions.AdminException;
-import com.peratera.common.provision.exceptions.CustomValidationException;
-import com.peratera.common.provision.exceptions.CustomerException;
-import com.peratera.common.provision.exceptions.ExceptionCode;
-import com.peratera.common.provision.exceptions.RepeaterException;
-import com.peratera.common.provision.exceptions.UnexpectedErrorException;
-import com.peratera.common.provision.exceptions.auth.CustomOAuth2Exception;
+import com.kedop.missingperson.domain.ComplexError;
+import com.kedop.missingperson.domain.ComplexResponse;
+import com.kedop.missingperson.domain.ErrorCode;
+import com.kedop.missingperson.exceptions.CustomerException;
+import com.kedop.missingperson.exceptions.ExceptionCode;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +24,6 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -39,15 +31,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestClientException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
- * &copy; 2021-2022 Peratera. All rights reserved.<br/><br/>
- *
- * @author Dmitry Ionash <a href="mailto:idv@peratera.com">idv@peratera.com</a>, created 2021-Aug-06
- * @version 0.4.18
- * @since 1.0.0
+ * @author oleksandrpolishchuk on 31.01.2023
+ * @project MissingPerson
  */
 @Slf4j
 @ControllerAdvice
@@ -55,52 +43,20 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class ResponseExceptionHandler {
 
     @ResponseBody
-    @ExceptionHandler(value = RepeaterException.class)
-    public ComplexResponse<Void> handle(final RepeaterException exception) {
-        log.error(EXCEPTION_LABEL, exception);
-        return new ComplexResponse<>(exception.getHttpStatus(), exception.getErrors().toArray(new ComplexError[]{}));
-    }
-
-    @ResponseBody
-    @ExceptionHandler(value = AdminException.class)
-    public ComplexResponse<Void> handle(final AdminException exception) {
-        log.error(EXCEPTION_LABEL, exception);
-        return new ComplexResponse<>(exception.getHttpStatus(), new ComplexError(exception.getPerateraErrorCode(),
-            exception.getMessage(), exception.getErrorCode().getCode(), exception.getObjects()));
-    }
-
-    @ResponseBody
     @ExceptionHandler(value = CustomerException.class)
     public ComplexResponse<Void> handle(final CustomerException exception) {
         log.error(EXCEPTION_LABEL, exception);
-        return new ComplexResponse<>(exception.getHttpStatus(), new ComplexError(exception.getPerateraErrorCode(),
+        return new ComplexResponse<>(exception.getHttpStatus(), new ComplexError(exception.getKedopErrorCode(),
                 exception.getMessage(), exception.getErrorCode().getCode(), exception.getObjects()));
     }
 
-    @ResponseBody
-    @ExceptionHandler(value = CustomOAuth2Exception.class)
-    public ComplexResponse<Void> handle(final CustomOAuth2Exception exception) {
-        log.error(EXCEPTION_LABEL, exception);
-        var errorResponse = new ComplexResponse<Void>(exception.getHttpErrorCode(), false);
-        errorResponse.addError(new ComplexError(exception.getOAuth2ErrorCode(), exception.getMessage(),
-                exception.getErrorCode().getCode(), exception.getObjects()));
-        return errorResponse;
-    }
-
-    @ResponseBody
-    @ExceptionHandler(value = UnexpectedErrorException.class)
-    public ComplexResponse<Void> handle(final UnexpectedErrorException exception) {
-        log.error(EXCEPTION_LABEL, exception);
-        return new ComplexResponse<>(exception.getHttpStatus(), new ComplexError(exception.getPerateraErrorCode(),
-            exception.getMessage(), exception.getErrorCode().getCode(), exception.getObjects()));
-    }
 
     /**
-     * According to {@link org.springframework.validation.beanvalidation.SpringValidatorAdapter
-     * #getArgumentsForConstraint} a first argument indicating the field name. Afterwards, it adds
-     * all actual constraint annotation attributes (i.e. excluding "message", "groups" and "payload")
-     * in alphabetical order of their attribute names.
-     *
+     * According to
+     * {@link org.springframework.validation.beanvalidation.SpringValidatorAdapter #getArgumentsForConstraint} a first
+     * argument indicating the field name. Afterwards, it adds all actual constraint annotation attributes (i.e.
+     * excluding "message", "groups" and "payload") in alphabetical order of their attribute names.
+     * <p>
      * Note! Please inform if API returns error with ID "30000"!
      *
      * @param exception {@link MethodArgumentNotValidException}
@@ -115,21 +71,12 @@ public class ResponseExceptionHandler {
         return complexResponse;
     }
 
-    @ResponseBody
-    @ExceptionHandler(value = CustomValidationException.class)
-    public ComplexResponse<Void> handle(final CustomValidationException exception) {
-        var complexResponse = new ComplexResponse<Void>(HttpStatus.BAD_REQUEST);
-        processFieldErrors(exception.getBindingResult().getFieldErrors(), complexResponse);
-        processGlobalErrors(exception.getBindingResult().getGlobalErrors(), complexResponse);
-        return complexResponse;
-    }
-
     private static void processFieldErrors(final List<FieldError> fieldErrors,
             final ComplexResponse<Void> complexResponse) {
         fieldErrors.stream().filter(Objects::nonNull).forEach(error -> {
             var errorCode = ErrorCode.UNKNOWN_ERROR_CODE;
             final var arguments = error.getArguments();
-            var objects = new Object[] {"unknown"};
+            var objects = new Object[]{"unknown"};
             if (arguments != null && arguments.length > 0) {
                 final var argumentList = Arrays.stream(arguments)
                         .filter(arg -> BeanUtils.isSimpleValueType(arg.getClass()) && !arg.getClass().isEnum())
@@ -149,16 +96,6 @@ public class ResponseExceptionHandler {
                 objects = argumentList.toArray();
             }
             complexResponse.addError(new ComplexError(ExceptionCode.CONSTRAINT_VIOLATION.name(), errorCode, objects));
-        });
-    }
-
-    private static void processGlobalErrors(List<ObjectError> globalErrors, ComplexResponse<Void> complexResponse) {
-        globalErrors.forEach(error -> {
-            final var errorArguments = Objects.requireNonNull(error.getArguments());
-            final var errorCode = (ErrorCode)  errorArguments[0];
-            final var objects = Arrays.copyOfRange(errorArguments, 1, errorArguments.length);
-            complexResponse.addError(new ComplexError(((GlobalValidationError) error).getGeneralErrorCode().name(),
-                    errorCode, objects));
         });
     }
 
@@ -188,13 +125,6 @@ public class ResponseExceptionHandler {
     }
 
     @ResponseBody
-    @ExceptionHandler(value = MismatchedInputException.class)
-    public ComplexResponse<Void> handle(final MismatchedInputException exception) {
-        return new ComplexResponse<>(HttpStatus.BAD_REQUEST, ExceptionCode.JSON_DESERIALIZATION_ERROR.name(),
-                ErrorCode.MISMATCHED_INPUT_ERROR, exception.getOriginalMessage());
-    }
-
-    @ResponseBody
     @ExceptionHandler(value = HttpMessageNotReadableException.class)
     public ComplexResponse<Void> handle(final HttpMessageNotReadableException exception) {
         return new ComplexResponse<>(HttpStatus.BAD_REQUEST, ExceptionCode.JSON_DESERIALIZATION_ERROR.name(),
@@ -207,23 +137,6 @@ public class ResponseExceptionHandler {
         log.error(EXCEPTION_LABEL, exception);
         return new ComplexResponse<>(HttpStatus.SERVICE_UNAVAILABLE, ExceptionCode.RESOURCE_ACCESS_ERROR.name(),
                 ErrorCode.RESOURCE_ACCESS_ERROR, exception.getMessage());
-    }
-
-    @ResponseBody
-    @ExceptionHandler(value = RestClientException.class)
-    public ComplexResponse<Void> handle(final RestClientException exception) {
-        log.error(EXCEPTION_LABEL, exception);
-        var message = exception.getMessage();
-        if (exception.getRootCause() != null) {
-            final var cause = exception.getRootCause();
-            if (cause instanceof JsonProcessingException) {
-                message = ((JsonProcessingException) exception.getRootCause()).getOriginalMessage();
-            } else {
-                message = cause.getMessage();
-            }
-        }
-        return new ComplexResponse<>(HttpStatus.INTERNAL_SERVER_ERROR, ExceptionCode.REST_CLIENT_ERROR.name(),
-                ErrorCode.REST_CLIENT_ERROR, message);
     }
 
     @ResponseBody
@@ -267,7 +180,7 @@ public class ResponseExceptionHandler {
 
     @ResponseBody
     @ExceptionHandler(value = MethodArgumentTypeMismatchException.class)
-    public ComplexResponse<Void> handle(final MethodArgumentTypeMismatchException  exception) {
+    public ComplexResponse<Void> handle(final MethodArgumentTypeMismatchException exception) {
         return new ComplexResponse<>(HttpStatus.BAD_REQUEST, ExceptionCode.PARAMETER_FORMAT_ERROR.name(),
                 ErrorCode.CONVERSION_ERROR, exception.getValue(),
                 exception.getRequiredType() == null ? "" : exception.getRequiredType().getSimpleName());

@@ -1,4 +1,4 @@
-package com.kedop.missingperson.entity;
+package com.kedop.missingperson.entities;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

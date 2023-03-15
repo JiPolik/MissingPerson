@@ -10,4 +10,12 @@ public class MissingPersonApplication {
         SpringApplication.run(MissingPersonApplication.class, args);
     }
 
+    //TODO handle later https://www.youtube.com/watch?v=AzSY0UlsrWQ
+//    @Bean
+//    public Function<String, String> toUpper() {
+//        return str -> {
+//            System.out.println(str);
+//            return str.toUpperCase(Locale.ROOT);
+//        };
+//    }
 }
